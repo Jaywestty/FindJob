@@ -1,0 +1,20 @@
+# Environment / secrets
+.env
+
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environment
+.venv/
+
+# Local personal data — SQLite DB is per-user, never committed
+jobs.db
+*.db
+
+# Logs
+*.log
+
+# OS noise
+.DS_Store
+Thumbs.db
