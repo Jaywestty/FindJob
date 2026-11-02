@@ -1,0 +1,254 @@
+# Job ingestion config — edit me, no code changes needed.
+#
+# locations is a list of objects, each with:
+#   name: display location string passed to JobSpy (e.g. "Lagos, Nigeria")
+#   region: nigeria | europe | gulf | global | north_america
+#   country_indeed: Indeed/Glassdoor country name, or null when unsupported
+#     (remote-only entries without a single country). When null,
+#     country_indeed is omitted from the scrape_jobs call entirely.
+#   sites: explicit JobSpy site_name values valid for that region.
+#     - zip_recruiter is US/Canada-only: only list it on north_america regions.
+#     - indeed/glassdoor require country_indeed; they are skipped when null.
+#     - bayt covers Gulf/Arab markets and ignores country_indeed.
+search_terms:
+  - "software engineer"
+  - "python developer"
+locations:
+  # --- Nigeria (LinkedIn + Indeed via ng.indeed.com; no Glassdoor upstream) ---
+  - name: "Lagos, Nigeria"
+    region: nigeria
+    country_indeed: nigeria
+    sites: [linkedin, indeed]
+  - name: "Abuja, Nigeria"
+    region: nigeria
+    country_indeed: nigeria
+    sites: [linkedin, indeed]
+  - name: "Remote Nigeria"
+    region: nigeria
+    country_indeed: nigeria
+    sites: [linkedin, indeed]
+
+  # --- Europe ---
+  - name: "Berlin, Germany"
+    region: europe
+    country_indeed: germany
+    sites: [linkedin, indeed, glassdoor]
+  - name: "London, UK"
+    region: europe
+    country_indeed: uk
+    sites: [linkedin, indeed, glassdoor]
+  - name: "Amsterdam, Netherlands"
+    region: europe
+    country_indeed: netherlands
+    sites: [linkedin, indeed, glassdoor]
+  - name: "Lisbon, Portugal"
+    region: europe
+    country_indeed: portugal
+    # NOTE: Glassdoor is not supported for Portugal upstream
+    # ("Glassdoor is not available for PORTUGAL"), so only linkedin+indeed.
+    sites: [linkedin, indeed]
+  - name: "Remote Europe"
+    region: europe
+    country_indeed: null
+    sites: [linkedin]
+
+  # --- Gulf/Arab ---
+  - name: "Dubai, UAE"
+    region: gulf
+    country_indeed: united arab emirates
+    sites: [linkedin, indeed]
+  - name: "Riyadh, Saudi Arabia"
+    region: gulf
+    country_indeed: saudi arabia
+    sites: [linkedin, indeed]
+  - name: "Doha, Qatar"
+    region: gulf
+    country_indeed: qatar
+    sites: [linkedin, indeed]
+  - name: "Remote Middle East"
+    region: gulf
+    country_indeed: null
+    sites: [linkedin]
+
+  # --- Global remote (LinkedIn only) ---
+  - name: "Remote"
+    region: global
+    country_indeed: null
+    sites: [linkedin]
+hours_old: 72
+results_wanted: 50
+# Global fallback for legacy plain-string locations; per-location `sites`
+# above take precedence.
+# NOTE: bayt is disabled (upstream HTTP 403 on every request). The
+# jobspy_source code path is kept; bayt entries are filtered at runtime with
+# a single one-line notice per run.
+jobspy_sites:
+  - linkedin
+  - indeed
+  - glassdoor
+greenhouse_companies:
+  - airbnb
+  - stripe
+# NOTE: lever slugs netflix/duolingo returned HTTP 404 and were removed;
+# the startup slug check drops any future 404s automatically.
+lever_companies: []
+# Ashby slugs are case-sensitive. Dead (404) slugs are dropped by the
+# startup slug check each run.
+ashby_companies:
+  - linear
+  - posthog
+  - deel
+  - ramp
+  - openai
+  - tem
+db_path: "jobs.db"
+# Pre-insert relevance gate: only jobs matching a wanted role family and
+# passing the seniority check ever reach the DB. Set strict_filtering: false
+# to disable for testing (everything is kept).
+strict_filtering: true
+role_categories:
+  - id: ai_ml
+    keywords:
+      - machine learning
+      - ml engineer
+      - ai engineer
+      - nlp
+      - computer vision
+      - llm
+      - data scientist
+      - maskininlärning
+      - datavetare
+  - id: backend
+    keywords:
+      - backend engineer
+      - backend developer
+      - api engineer
+      - server-side
+      - django
+      - fastapi
+      - node backend
+      - systemutvecklare
+      - backendutvecklare
+      - mjukvaruutvecklare
+seniority_filter:
+  exclude_keywords:
+    - senior
+    - staff
+    - principal
+    - lead
+    - director
+    - head of
+    - vp
+    - architect
+    - chef
+  include_keywords:
+    - junior
+    - entry level
+    - associate
+    - mid level
+    - mid-level
+  # Intern titles are rejected outright unless this is set to false
+  # ("explicitly wanted").
+  exclude_interns: true
+  max_years_experience: 5
+# Extra API/RSS sources (official public APIs/feeds only, no scraping).
+# Each can be toggled independently without code changes.
+extra_sources:
+  remoteok: {enabled: true}
+  remotive: {enabled: true}
+  himalayas: {enabled: true}
+  jobicy: {enabled: true}
+  weworkremotely: {enabled: true}
+  nordictechjobs: {enabled: true}
+  englishjobs: {enabled: true}
+  arbeitnow: {enabled: true, max_pages: 5}
+  workingnomads: {enabled: true}
+  pythonorg: {enabled: true}
+  hackernews: {enabled: true, months_back: 2}
+  ashby: {enabled: true}
+  jobberman: {enabled: true}
+  myjobmag: {enabled: true}
+# NOTE: Workable (200 with an empty jobs list for every test slug) and
+# Recruitee (404 on every test slug) were probed and skipped: no module.
+# See the final run report.
+# Polite crawler layer (job_ingest/crawler.py): per-host rate limiting via
+# robots.txt Crawl-delay honoring max(declared, default_delay_seconds), and
+# a per-run cap on job detail-page fetches shared by all crawler sources.
+crawler:
+  max_detail_fetches_per_run: 150
+  default_delay_seconds: 1.5
+  user_agent: "JobToolBot/1.0 (+personal research project; polite crawler; respects robots.txt)"
+# Swedish boards (region_tag stored on kept jobs).
+# max_jobs budgets fit the shared 150/run detail-fetch cap:
+# 60 (nordic) + 45 (jobberman) + 45 (myjobmag) = 150.
+nordictechjobs:
+  countries: [sweden]
+  sitemap_url: "https://nordictechjobs.com/sitemap.xml"
+  max_jobs: 60
+  region_tag: nordics
+englishjobs:
+  countries: [sweden]
+  default_location: Sweden
+  per_page: 100
+  max_pages: 5
+  region_tag: nordics
+# Nigerian boards (region_tag stored on kept jobs).
+jobberman:
+  categories: [software-data]
+  days: 30
+  max_jobs: 45
+  region_tag: nigeria
+myjobmag:
+  sitemap_url: "https://www.myjobmag.com/sitemapindex.xml"
+  slug_keywords: [engineer, developer, software, data, python, backend,
+    frontend, fullstack, full-stack, mobile, android, ios, devops, qa,
+    ai, ml, analyst, scientist, tester]
+  max_jobs: 45
+  region_tag: nigeria
+# Language gate (job_ingest/language.py): applied to every source before
+# insert. blocked_patterns are requirement phrasings, NOT "X is a plus"
+# mentions (bare language names never appear here). min_english_ratio is
+# the minimum share of common English stopwords in the first 1500
+# characters of the description.
+language_gate:
+  enabled: true
+  min_english_ratio: 0.10
+  blocked_patterns:
+    - "fluen[st]\\s+\\w{0,12}\\s*(german|deutsch)"
+    - "(german|deutsch)\\s+(required|requirement|requirement[: ]|fluency|proficiency|skills|C1|C2)"
+    - "(require[sd]?|requiring|need|needs|must have)\\s+\\w{0,30}\\s*(german|deutsch)"
+    - "(german|deutsch)\\s+C[12]\\b"
+    - "\\bC[12]\\b\\s+\\w{0,20}\\s*(german|deutsch)"
+    - "Deutschkenntnisse"
+    - "fliessend\\w*\\s+Deutsch"
+    - "fließend\\w*\\s+Deutsch"
+    - "fluen[st]\\s+\\w{0,12}\\s*swedish"
+    - "swedish\\s+(required|requirement|fluency|proficiency)"
+    - "(require[sd]?|requiring)\\s+\\w{0,30}\\s*swedish"
+    - "\\bsvenska\\b"
+    - "fluen[st]\\s+\\w{0,12}\\s*dutch"
+    - "dutch\\s+(required|requirement|fluency|proficiency)"
+    - "(require[sd]?|requiring)\\s+\\w{0,30}\\s*dutch"
+    - "fluen[st]\\s+\\w{0,12}\\s*french"
+    - "french\\s+(required|requirement|fluency|proficiency)"
+    - "(require[sd]?|requiring)\\s+\\w{0,30}\\s*french"
+# Remote eligibility from Nigeria (job_ingest/remote_scope.py). CET and UK
+# timezone requirements are deliberately absent (Lagos is UTC+1).
+remote_scope:
+  worldwide_terms: [worldwide, anywhere, global, work from anywhere,
+    africa, emea, nigeria]
+  restricted_patterns:
+    - "\\b(usa|united states|u\\.s\\.)\\s+only\\b"
+    - "(?-i:\\bUS\\s+only\\b)"
+    - "\\b(usa|united states|u\\.s\\.)\\b[^.\\n]{0,60}\\bonly\\b"
+    - "\\bonly\\s+(u\\.?s\\.?\\s*citizens?|u\\.?s\\.?\\s*residents?)"
+    - "\\bmust be (based|located|resid\\w+|living) in\\b"
+    - "\\bauthori[sz]ed to work in\\b"
+    - "\\b(u\\.?s\\.?|u\\.?k\\.?|eu)\\s+citi[sz]ens?\\b"
+    - "\\bright to work in\\b"
+    - "\\bbased in (the\\s+)?(u\\.?s\\.?(a\\.?)?|latam)\\b"
+    - "(?-i:\\b(?:EST|EDT|PST|PDT|CST|CDT|MST|MDT)\\b)"
+# Daily-run housekeeping: delete unapplied rows older than this many days.
+retention_days: 3
+# Telegram digest: how many of the run's new jobs (by match %) to list.
+telegram_top_n: 10

@@ -1,0 +1,62 @@
+# Match profile — edit me, no code changes needed.
+#
+# profile_text is embedded once and compared (cosine similarity) against
+# every job description as the base score. Everything below tunes the
+# rule-based adjustments layered on top; all weights are in cosine units
+# (0..1) before the final x100 conversion to match_percentage.
+profile_text: |
+  Software engineer specializing in Python and SQL with TypeScript/JavaScript
+  for full-stack work. AI/ML: RAG architecture with hybrid retrieval,
+  cross-encoder re-ranking and hallucination detection; text-to-SQL systems;
+  LLM orchestration with Groq, Gemini and agent workflow platforms;
+  forecasting with SARIMAX and LLaMA hybrids; classical ML with XGBoost and
+  class imbalance handling. Backend: FastAPI, PostgreSQL, OpenSearch,
+  Alembic, Supabase (Auth, Storage, Realtime, Row Level Security), Odoo
+  ERP and MCP integration, MLOps with MLflow, Docker, GitHub Actions and
+  Hugging Face Spaces. Frontend: Next.js, PWA architecture, Paystack
+  payment integration, geospatial with Mapbox and OpenCage, Web Push with
+  VAPID. Target roles: ML Engineer, AI/ML Engineer, Backend Engineer,
+  Prompt Engineer, Data Scientist. Based in Lagos, Nigeria, open to remote.
+
+target_roles:
+  - "ML Engineer"
+  - "AI/ML Engineer"
+  - "Backend Engineer"
+  - "Prompt Engineer"
+  - "Data Scientist"
+
+boost_keywords:
+  - "FastAPI"
+  - "Python"
+  - "RAG"
+  - "LLM"
+  - "PostgreSQL"
+
+# Boost added once if the title contains any target role (case-insensitive).
+title_boost: 0.15
+# Boost per matched keyword in the description (whole-word, case-insensitive).
+keyword_boost: 0.03
+keyword_boost_cap: 0.15
+
+# Penalty if the max years-of-experience required exceeds the threshold.
+experience_threshold_years: 5
+experience_penalty_per_year: 0.05
+experience_penalty_cap: 0.25
+
+# Flat penalty if the job is onsite-only and the location is neither
+# home_location nor remote.
+location_penalty: 0.20
+home_location: "Lagos"
+
+# Remote eligibility from Nigeria (Part 5): bonus for worldwide-remote,
+# penalty for restricted-remote; unknown scopes get no change.
+remote_worldwide_boost: 0.05
+remote_restricted_penalty: 0.15
+
+# Relocation block, default disabled. When enabled, the onsite location
+# penalty is skipped for jobs in preferred_countries, and postings
+# mentioning visa sponsorship / relocation support get the boost below.
+relocation:
+  enabled: false
+  preferred_countries: []
+  visa_sponsorship_boost: 0.05
